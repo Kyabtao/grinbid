@@ -26,7 +26,8 @@
     me: null,
     online: 7,
     current: null,
-    query: {}
+    query: {},
+    navOpen: false
   };
 
   const AVATARS = ['😀', '😎', '🤓', '🦊', '🐱', '🐶', '🦄', '🐸', '🐙', '👻', '🤖', '🐹', '🎤', '🎸', '🍕', '🍩', '🌈', '⚡', '⭐', '🍀'];
@@ -44,7 +45,7 @@
     { username: 'moonwalker_z', label: '🦊 moonwalker_z', note: 'top of the season leaderboard' }
   ];
 
-  window.GB = { api, toast, go, openAuth, openBoost, openClaim, claimDaily, claimLucky, doBoost, refresh, setAvatar, submitAuth, logout, shareCode, claimTask, donate, createProfile, adminLogin, adminAction, copyText, resetDemo, quickLogin, pickDonate, search, pickAmount, submitClaim, openLegal, closeModal };
+  window.GB = { api, toast, go, openAuth, openBoost, openClaim, claimDaily, claimLucky, doBoost, refresh, setAvatar, submitAuth, logout, shareCode, claimTask, donate, createProfile, adminLogin, adminAction, copyText, resetDemo, quickLogin, pickDonate, search, pickAmount, submitClaim, openLegal, closeModal, toggleNav, closeNav };
   // tiny helpers referenced by inline handlers in rendered HTML
   window.go = go;
   window.gbv = gbv;
@@ -228,8 +229,10 @@
     try { await api('/auth/logout', { method: 'POST' }); } catch { }
     S.me = null;
     toast('Logged out. See you soon! 👋');
-    render();
-    go('#/home');
+    // render exactly once: navigate to home and let hashchange do the render,
+    // unless we are already on home (no hashchange fires then)
+    if ((S.current || 'home') === 'home') render();
+    else go('#/home');
   }
 
   function resetDemo() {
@@ -243,7 +246,8 @@
     return `
     <header class="topbar"><div class="wrap topbar-inner">
       <a class="logo" href="#/home"><span class="lolly">🎪</span> Grinbid <span class="demo-badge">demo</span></a>
-      <nav class="nav" id="nav">
+      <button class="nav-toggle" id="navToggle" aria-label="Toggle menu" aria-expanded="${Boolean(S.navOpen)}" aria-controls="nav" onclick="GB.toggleNav()">${S.navOpen ? '✕' : '☰'}</button>
+      <nav class="nav${S.navOpen ? ' open' : ''}" id="nav">
         <a href="#/home" data-r="home">Home</a>
         <a href="#/discover" data-r="discover">Discover</a>
         <a href="#/tasks" data-r="tasks">Tasks</a>
@@ -291,6 +295,28 @@
   function setNav() {
     const r = (S.current || 'home').split('/')[0];
     $$('#nav a').forEach((a) => a.classList.toggle('on', a.dataset.r === r));
+  }
+
+  // Mobile hamburger menu — toggled in place (no re-render, no scroll loss).
+  function toggleNav() {
+    S.navOpen = !S.navOpen;
+    paintNav();
+  }
+
+  function closeNav() {
+    if (!S.navOpen) return;
+    S.navOpen = false;
+    paintNav();
+  }
+
+  function paintNav() {
+    const nav = $('#nav');
+    if (nav) nav.classList.toggle('open', Boolean(S.navOpen));
+    const t = $('#navToggle');
+    if (t) {
+      t.setAttribute('aria-expanded', String(Boolean(S.navOpen)));
+      t.textContent = S.navOpen ? '✕' : '☰';
+    }
   }
 
   function footerHTML() {
@@ -970,27 +996,52 @@
   }
 
   // ------------------------------------------------------------------ Router
-  async function render() {
+  // Renders are non-destructive: when the screen we already show is simply
+  // refreshed (live boost feed, coin claim, task claim…), the current content
+  // stays on screen and is swapped out only once the fresh data has rendered —
+  // no full-page spinner flash, no scroll reset, nothing that feels like a
+  // page reload. Only real navigations (hashchange) show the spinner and
+  // scroll back to the top.
+  let renderSeq = 0;
+  async function render(opts = {}) {
+    const seq = ++renderSeq;
     const hash = location.hash.replace(/^#/, '') || '/home';
     const [path, qs] = hash.split('?');
     const seg = path.split('/').filter(Boolean);
     S.query = Object.fromEntries(new URLSearchParams(qs || ''));
-    S.current = seg.join('/') || 'home';
+    const route = seg[0] || 'home';
+    const routeKey = seg.join('/') || 'home';
+    const navigated = opts.nav === true;                 // came from hashchange/back-forward
+    const routeChanged = routeKey !== S.current;
+    if (navigated) S.navOpen = false;                    // hamburger closes on navigation
+    S.current = routeKey;
     const viewEl = $('#view');
     if (!viewEl) return;
-    viewEl.innerHTML = '<p class="center"><span class="spinner">🎡</span> Loading…</p>';
+    // show the loading spinner only on first paint or an actual route change;
+    // a refresh of the current route keeps the existing screen in place
+    if (!viewEl.firstChild || viewEl.dataset.route !== (routeKey + (qs || '')) || routeChanged) {
+      viewEl.dataset.route = routeKey + (qs || '');
+      if (navigated || !viewEl.firstChild) {
+        viewEl.innerHTML = '<p class="center"><span class="spinner">🎡</span> Loading…</p>';
+      }
+    }
     refreshHeader();
+    const keepScroll = !navigated && !routeChanged;
+    const prevScrollY = window.scrollY;
     try {
       let html;
-      const route = seg[0] || 'home';
       if (route === 'profile' && seg[1]) html = await VIEWS.profile(seg[1]);
       else if (VIEWS[route]) html = await VIEWS[route]();
       else html = await VIEWS.home();
+      if (seq !== renderSeq) return;                     // a newer render superseded this one
       if ($('#view')) $('#view').innerHTML = html;
       refreshHeader();
       if (route === 'wallet') startCountdowns();
       if (route === 'admin') loadClaims();
+      if (navigated || routeChanged) window.scrollTo(0, 0);
+      else if (keepScroll && window.scrollY !== prevScrollY) window.scrollTo(0, prevScrollY);
     } catch (err) {
+      if (seq !== renderSeq) return;
       if ($('#view')) $('#view').innerHTML = `<div class="card danger"><h3>😵 Oops</h3><p>${esc(err.message)}</p><button class="btn" onclick="location.hash='#/home'">Go home</button></div>`;
     }
   }
@@ -1098,7 +1149,17 @@
   let _dTimer = null;
   function debounceRender() {
     clearTimeout(_dTimer);
-    _dTimer = setTimeout(render, 700);
+    _dTimer = setTimeout(() => {
+      // Never yank the screen away while the user is typing into a form on it
+      // (e.g. the Discover search box or the Create form) — retry shortly.
+      const ae = document.activeElement;
+      const viewEl = $('#view');
+      if (ae && viewEl && viewEl.contains(ae) && /^(INPUT|TEXTAREA|SELECT)$/.test(ae.tagName)) {
+        debounceRender();
+        return;
+      }
+      render();
+    }, 700);
   }
 
   let _hTimer = null;
@@ -1112,10 +1173,20 @@
     document.title = 'Grinbid Demo — Bid. Back. Rank up. (static demo)';
     document.body.innerHTML = shellHTML('<p class="center"><span class="spinner">🎡</span> Warming up the carnival…</p>');
     await refresh();
-    window.addEventListener('hashchange', render);
+    window.addEventListener('hashchange', () => render({ nav: true }));
+    // auto-close the mobile menu when any nav link is tapped (delegated —
+    // survives header rebuilds, and also covers taps on the current route
+    // where no hashchange/render happens)
+    document.addEventListener('click', (e) => {
+      if (e.target.closest && e.target.closest('#nav a')) closeNav();
+    });
     connectBus();
-    if (!location.hash) location.hash = '#/home';
-    await render();
+    if (!location.hash) {
+      // seed the default route without firing hashchange → single render
+      try { history.replaceState(null, '', '#/home'); }
+      catch { location.hash = '#/home'; }
+    }
+    await render({ nav: true });
   }
 
   boot().catch((err) => {

@@ -8,14 +8,17 @@ backend runs inside the page, demo data lives in your browser's
 ```
 demo/
   index.html     the page — just open it (no build step, no install)
-  styles.css     playful-pop theme + demo chrome
+  styles.css     playful-pop theme + demo chrome + mobile responsive layout
+                 (hamburger menu, stacked grids, bottom-docked toasts)
   demo-data.js   static demo seed: 13 fan pages, 16 tasks, 7 demo users,
                  33-boost history, claim queue, donation intents
   demo-api.js    the in-browser mock backend: same routes & economy math as
                  the real API (streaks, drops, ×1.5 self-boosts, 2s cooldown,
                  task unlocks, referral match, season payouts, admin tools)
   app.js         the SPA: hash routing, 9 screens, modals, confetti,
-                 live-feed toasts, cross-tab sync
+                 live-feed toasts, cross-tab sync — re-renders are
+                 non-destructive (no full-page flash, scroll is kept,
+                 and live updates never interrupt you while typing)
   server.js      optional zero-dependency static server (not required)
   test-demo.js   headless check of the mock API — `node demo/test-demo.js`
                  (29 assertions: economy math, cooldowns, tasks, referrals,
@@ -89,7 +92,11 @@ The login modal has one-click buttons for all of these.
   settlement (50k/25k/10k prizes to the top 3), claim-request approve/reject,
   full demo reset.
 - **Live feel** — demo bots boost around every ~10s, presence counter moves,
-  and open tabs stay in sync with each other.
+  and open tabs stay in sync with each other. Live updates repaint the screen
+  in place: no reload-style flash, your scroll position and any text you're
+  typing stay untouched.
+- **Mobile responsive** — hamburger menu on narrow screens, stacked grids,
+  full-width buttons, bottom-docked toasts, no sideways scrolling.
 
 ## Reset
 
