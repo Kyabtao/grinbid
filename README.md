@@ -151,3 +151,20 @@ instead of crashing.
 zero-dependency & syntax checks → full test suite (economy math, atomic store,
 rate limits, sanitization, SSE, legal pages) → live-server smoke of all 9 SPA
 screens + legal views + `/api/stream`. Any failure resets the streak to 0.
+
+## Deploy (free, mobile-friendly)
+
+See **`deploy/ORACLE-MOBILE.md`** for the full phone-only walkthrough:
+Oracle Cloud Always Free VM + Termius. Once the VM exists, one pasted command
+installs everything:
+
+```bash
+sudo bash -c "$(curl -fsSL https://raw.githubusercontent.com/Kyabtao/grinbid/arena/01a049f5-grinbid/deploy/oracle/setup.sh)"
+```
+
+- Installs Node 22 (ARM64-aware), clones Grinbid, creates a `systemd` service
+  (auto-restart, start on boot), adds a keep-alive cron so Oracle doesn't
+  reclaim an idle free instance, sets up log rotation.
+- Then open **port 3000** in the VCN security list (steps in the doc).
+- Always change `ADMIN_PASSWORD` (default `grinbid-admin-dev`) before going
+  public.
