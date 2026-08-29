@@ -154,6 +154,19 @@ screens + legal views + `/api/stream`. Any failure resets the streak to 0.
 
 ## Deploy (free, mobile-friendly)
 
+### Render — one click, best for a demo
+
+[![Deploy to Render](https://render.com/images/deploy-to-render.svg)](https://render.com/deploy?repo=https://github.com/Kyabtao/grinbid)
+
+Zero-dependency Node app + `render.yaml` blueprint: free plan, Node 22,
+auto-generated `ADMIN_PASSWORD` / `SESSION_SECRET`, `/api/health` checks.
+Full guide (one-click or manual, phone-friendly): **`deploy/RENDER.md`**.
+
+> Caveat: Render's free disk is ephemeral — `data/db.json` reseeds on every
+> redeploy. Fine for demos; the app recovers automatically.
+
+### Oracle Cloud Always Free VM
+
 See **`deploy/ORACLE-MOBILE.md`** for the full phone-only walkthrough:
 Oracle Cloud Always Free VM + Termius. Once the VM exists, one pasted command
 installs everything:

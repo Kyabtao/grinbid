@@ -28,6 +28,11 @@ function verifyPassword(password, salt, expectedHash) {
 
 function hmacKey() {
   // Session tokens are signed with an HMAC derived from a persistent secret.
+  // On platforms with ephemeral disks (e.g. Render) SESSION_SECRET can be set
+  // as an env var so logins survive redeploys.
+  if (process.env.SESSION_SECRET && process.env.SESSION_SECRET.trim()) {
+    return process.env.SESSION_SECRET.trim();
+  }
   const fs = require('fs');
   const path = require('path');
   const secretFile = path.join(CONFIG.DATA_DIR, '.session-secret');
