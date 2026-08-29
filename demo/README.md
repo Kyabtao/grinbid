@@ -39,6 +39,24 @@ python3 -m http.server 4173 --directory demo
 
 No `npm install`, no environment variables, no network calls.
 
+## Deploy on GitHub Pages
+
+Two one-time steps and every push to `main` that touches `demo/` goes live
+automatically at **`https://<owner>.github.io/grinbid/`**:
+
+1. **Add the workflow** — on GitHub: *Add file → Create new file*, name it
+   `.github/workflows/deploy-demo.yml`, paste the contents of
+   [`demo/github-pages-workflow.yml`](github-pages-workflow.yml), commit to `main`.
+2. **Enable Pages** — *Settings → Pages → Build and deployment → Source:
+   GitHub Actions*.
+
+Then merge the demo PR (or push any change inside `demo/`) and watch the run
+under the *Actions* tab. You can also trigger it manually from
+*Actions → Deploy demo to GitHub Pages → Run workflow*.
+
+Works because the demo is 100% static: relative asset paths, hash routing,
+no server calls — only `localStorage`.
+
 ## Demo logins
 
 | Account | Password | What it shows |
