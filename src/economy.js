@@ -440,6 +440,8 @@ function publicProfile(state, profile) {
     fanCreated: true,
     verified: Boolean(profile.verified),
     claimedByUsername: profile.claimedBy ? (state.users[profile.claimedBy] || {}).username || null : null,
+    createdByUsername: profile.createdByUsername || (profile.createdBy ? (state.users[profile.createdBy] || {}).username || null : null),
+    createdAt: profile.createdAt || null,
     isMineProfile: false,
     boostTotal: profile.boostTotal,
     boostCount: profile.boostCount,

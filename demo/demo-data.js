@@ -122,7 +122,8 @@
       tagline: 'A rooftop art collective after dark.',
       tags: ['art', 'collective', 'nightlife'],
       description: 'Community page for the Midnight Mosaic collective — glow-paint murals, rooftop projections and midnight sketch clubs.',
-      createdByUsername: 'pixelpanda'
+      createdByUsername: 'pixelpanda',
+      createdAt: '2026-07-19T10:00:00.000Z'
     }
   ];
 

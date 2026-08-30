@@ -94,7 +94,11 @@ scripts/
 ## SPA screens (hash routes)
 
 `#/home` · `#/discover` · `#/profile/:slug` · `#/wallet` · `#/tasks` ·
-`#/refer` · `#/create` · `#/donate` · `#/admin` · `#/terms` · `#/privacy`
+`#/refer` · `#/create` · `#/mine` · `#/donate` · `#/admin` · `#/terms` · `#/privacy`
+
+`#/mine` (**My page**) shows the fan-created profile you own — with its stats,
+"created by you" badge and a one-tap ×1.5 self-boost. Profile pages also show
+who created them (`created by @user`) and the creation date.
 
 Legal modals pop from the footer; the **claim/verify modal** lives on every
 seeded (fan-created) profile page.

@@ -254,6 +254,7 @@
         <a href="#/wallet" data-r="wallet">Wallet</a>
         <a href="#/refer" data-r="refer">Refer</a>
         <a href="#/create" data-r="create">Create</a>
+        ${m ? '<a href="#/mine" data-r="mine">My page</a>' : ''}
         <a href="#/donate" data-r="donate">Donate</a>
         <a href="#/admin" data-r="admin">Admin</a>
       </nav>
@@ -500,6 +501,14 @@
               <span class="cat-badge">${esc(cat.label)}</span>
               ${p.seed ? '<span class="sticker fan">fan-made · not affiliated</span>' : '<span class="sticker">community page</span>'}
               ${p.verified ? '<span class="sticker verified">🟢 verified owner' + (p.claimedByUsername ? ' · @' + esc(p.claimedByUsername) : '') + '</span>' : ''}
+              <div class="muted small mt" style="margin-top:6px">
+                ${p.isMineProfile
+                  ? '<span class="sticker self">you created this 🎪</span>'
+                  : p.createdByUsername
+                    ? `created by <b>@${esc(p.createdByUsername)}</b>`
+                    : 'community page'}
+                ${p.createdAt ? ` · ${new Date(p.createdAt).toLocaleDateString()}` : ''}
+              </div>
             </div>
           </div>
           <div class="right">
@@ -800,6 +809,63 @@
     }
   }
 
+  // ---- 7b. My creation ("My page")
+  VIEWS.mine = async () => {
+    if (!S.me) return requireLogin();
+    const m = S.me;
+    const slug = m.createdProfileSlug;
+    if (!slug) {
+      return `
+        <h1 class="section-title">🎪 My creation</h1>
+        <div class="card center" style="max-width:520px;margin:30px auto">
+          <div style="font-size:3rem">🏷️</div>
+          <h2 style="margin:.3em 0">You haven't created a page yet</h2>
+          <p class="muted">Create your one <b>fan-created community profile</b> and boost it to earn the <b>×1.5 self-boost</b>.</p>
+          <button class="btn big purple" onclick="go('#/create')">✨ Create my fan page</button>
+          <p class="muted small mt">Boosting your own page earns 1.5× points. 🚀</p>
+        </div>`;
+    }
+    let p;
+    try {
+      const data = await api('/profiles/' + encodeURIComponent(slug));
+      p = data.profile;
+    } catch {
+      return `<div class="card danger"><h3>😵 Couldn't load your page</h3><p>${esc(slug)} not found.</p></div>`;
+    }
+    const cat = CATS[p.category] || { label: p.category };
+    return `
+      <h1 class="section-title">🎪 My creation</h1>
+      <div class="card">
+        <div class="row spread">
+          <div class="row">
+            <span class="avatar big">${esc(p.emoji)}</span>
+            <div>
+              <h2 style="margin:0">${esc(p.name)}</h2>
+              <span class="cat-badge">${esc(cat.label)}</span>
+              ${p.verified ? '<span class="sticker verified">🟢 verified owner</span>' : ''}
+              <div class="muted small mt" style="margin-top:6px">
+                <span class="sticker self">created by you 🎪</span>
+                ${p.createdAt ? ` · created ${new Date(p.createdAt).toLocaleDateString()}` : ''}
+              </div>
+            </div>
+          </div>
+          <div class="right">
+            <div class="tag" style="font-size:1.4rem">🪙 ${fmt(p.boostTotal)}</div>
+            <div class="muted small">${fmt(p.boostCount)} boosts · ${fmt(p.fanCount)} fans</div>
+          </div>
+        </div>
+        <p class="mt">${esc(p.description || '')}</p>
+        <div class="row">${(p.tags || []).map((t) => `<span class="sticker">#${esc(t)}</span>`).join('')}</div>
+        <div class="row mt">
+          <button class="btn big pink" onclick="GB.openBoost('${esc(p.slug)}')">🔥 Boost my page (×1.5)</button>
+          <button class="btn big" style="background:#fff" onclick="go('#/profile/${esc(p.slug)}')">👀 View page</button>
+        </div>
+      </div>
+      <div class="notice legal mt">
+        💡 Boosting your own fan page earns <b>×1.5 points</b> per coin — the best return in the game. Coins are 100% free virtual coins with zero cash value.
+      </div>`;
+  };
+
   // ---- 8. Donate
   VIEWS.donate = async () => {
     const methods = await api('/donations/methods');
@@ -1093,7 +1159,7 @@
     bus.on('boost', (d) => {
       toast(`🔥 ${d.username} boosted ${d.profileName} (+${fmt(d.value)} pts)`);
       refreshHeaderSoon();
-      if (['home', 'discover'].includes(S.current) || (S.current || '').startsWith('profile/')) debounceRender();
+      if (['home', 'discover', 'mine'].includes(S.current) || (S.current || '').startsWith('profile/')) debounceRender();
     });
     bus.on('claim', (d) => {
       if (d.kind === 'lucky') toast(`🍀 ${d.username} hit a lucky drop (+${fmt(d.amount)} coins)!`);
@@ -1113,7 +1179,7 @@
     });
     bus.on('profile_new', (d) => {
       toast(`✨ New fan page: ${d.name}!`, 'good');
-      if (S.current === 'discover' || S.current === 'home') debounceRender();
+      if (S.current === 'discover' || S.current === 'home' || S.current === 'mine') debounceRender();
     });
     bus.on('claim_request', () => { if (S.current === 'admin') debounceRender(); });
     bus.on('claim_updated', () => {
