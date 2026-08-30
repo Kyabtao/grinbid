@@ -588,6 +588,8 @@
       seed: Boolean(profile.seed), fanCreated: true,
       verified: Boolean(profile.verified),
       claimedByUsername: profile.claimedBy ? ((state().users[profile.claimedBy] || {}).username || null) : null,
+      createdByUsername: profile.createdByUsername || (profile.createdBy ? ((state().users[profile.createdBy] || {}).username || null) : null),
+      createdAt: profile.createdAt || null,
       isMineProfile: Boolean(user && profile.createdBy === user.id),
       boostTotal: profile.boostTotal, boostCount: profile.boostCount, fanCount: profile.fanCount,
       lastBoostAt: profile.lastBoostAt,
